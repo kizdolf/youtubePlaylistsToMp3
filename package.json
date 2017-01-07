@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "jsesc": "^2.4.0"
+    "jsesc": "^2.4.0",
+    "magic-globals": "^0.5.1"
   }
 }

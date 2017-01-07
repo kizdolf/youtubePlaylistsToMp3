@@ -28,6 +28,8 @@ youtube-dl
 --print-json
 */
 'use strict'
+require('magic-globals')
+const child_process   = require('child_process')
 
 // Stuff you can change:
 const destPath = '/home/dk/Lab/js/youtubePlaylistsToMp3/zik/'
@@ -43,28 +45,57 @@ const playlistIds = [
 ]
 
 //stuff you should maybe not change too much (excpet if you want to do the TODO list ofc)
-const child_process   = require('child_process')
+const program = 'youtube-dl'
+const Ytdls = {
+  count : 0,
+  spawns : []
+}
+
+const handleSpawn = (spawn, rank) => {
+  Ytdls.spawns[rank] = spawn
+  Ytdls.spawns[rank].on('error', (err) => {
+    console.log(rank);
+    console.log('error!', err)
+  })
+  Ytdls.spawns[rank].stdout.on('data', (data) => {
+    console.log(rank);
+     console.log(data.toString('UTF8'))
+   })
+  Ytdls.spawns[rank].stderr.on('data', (data) => {
+    console.log(rank);
+    console.log(`stderr: ${data}`)
+  })
+  Ytdls.spawns[rank].on('close', (code) => {
+    console.log(rank);
+    console.log(`child process exited with code ${code}`)
+  })
+}
+
+const getYoutubeDlArgs = (youtubeId, category = 'audio', type = 'playlist') => {
+
+  if(!youtubeId || typeof youtubeId !== 'string') {
+    console.log('youtubeId need to be a string.', __file, __line)
+  }
+
+  const safetyArgs    = ['-4', '--no-warnings', '-i']
+  const metaDataArgs  = ['--embed-thumbnail', '--write-info-json']
+  const outputArgs    = ['-o', destPathFormated]
+
+  if (category === 'audio') {
+    if (type === 'playlist') {
+      const categoryArgs = ['-x', '--audio-format', 'mp3']
+      const outputArgs = ['-o', destPathFormated]
+      return [...safetyArgs, ...categoryArgs, youtubeId, ...outputArgs, ...metaDataArgs]
+    }
+  }
+}
 
 const downloadPlaylists = (playlist) => {
-  const program       = 'youtube-dl'
-  const safetyArgs    = ['-4', '--no-warnings', '-i']
-  const audioArgs     = ['-x', '--audio-format', 'mp3']
-  const outputArgs    = ['-o', destPathFormated]
-  const metaDataArgs  = ['--embed-thumbnail', '--write-info-json']
-
-  const dlChilds = []
-  let count = playlistIds.length -1
-
+  Ytdls.count = playlistIds.length -1
   for (let i = playlistIds.length - 1; i >= 0; i--) {
-
-    const idPlaylist = playlistIds[i]
-    const fullArgs = [...safetyArgs, ...audioArgs, idPlaylist, ...outputArgs, ...metaDataArgs, toJsonArgs]
-
-    dlChilds[i] = child_process.spawn(program, fullArgs)
-    dlChilds[i].on('error', err => console.log('error!', err) )
-    dlChilds[i].stdout.on('data', data =>  console.log(data.toString('UTF8')) )
-    dlChilds[i].stderr.on('data', data => console.log(`stderr: ${data}`) )
-    dlChilds[i].on('close', code => console.log(`child process exited with code ${code}`) )
+    const fullArgs = getYoutubeDlArgs(playlistIds[i])
+    const spawnYT = child_process.spawn(program, fullArgs)
+    handleSpawn(spawnYT, i)
   }
 }
 
