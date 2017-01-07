@@ -29,19 +29,20 @@ youtube-dl
 */
 'use strict'
 require('magic-globals')
-const child_process   = require('child_process')
+const child_process = require('child_process')
+const parser = require('./parsers.js')
 
 // Stuff you can change:
 const destPath = '/home/dk/Lab/js/youtubePlaylistsToMp3/zik/'
 const destPathFormated = destPath + '%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s'
 
 const playlistIds = [
-'PL9mC8MCWYBj3g8xmoaCDGmnv8JavgzWEd',
-'PL9mC8MCWYBj0cLCKMkwnPR-TlbUOavoDh',
+// 'PL9mC8MCWYBj3g8xmoaCDGmnv8JavgzWEd',
+// 'PL9mC8MCWYBj0cLCKMkwnPR-TlbUOavoDh',
 'PLJK-J3dfQ5FUIUi89Su5p9AcIFDYeey24',
-'PL9mC8MCWYBj2jQvaCSEKE2wzdUbZ8I6Ju',
-'PL-THY7w0kcYTeVb_BF3arlFlu5dKn_HNe',
-'PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP',
+// 'PL9mC8MCWYBj2jQvaCSEKE2wzdUbZ8I6Ju',
+// 'PL-THY7w0kcYTeVb_BF3arlFlu5dKn_HNe',
+// 'PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP',
 ]
 
 //stuff you should maybe not change too much (excpet if you want to do the TODO list ofc)
@@ -51,23 +52,56 @@ const Ytdls = {
   spawns : []
 }
 
+const initSpawn = () => {
+  return {
+    spawn : {},
+    data : {
+      playlistId: "",
+      playlistName: "",
+      playlistCount: -1,
+      tracksDone: [],
+      currentTrack : {
+        title : "",
+        size: "",
+        percent: "",
+        speed: "",
+        remain: "",
+        rank: -1
+      },
+      rank : -1,
+      stdout : "",
+      stderr: [],
+      errors: [],
+      done : false
+    }
+  }
+}
+
 const handleSpawn = (spawn, rank) => {
-  Ytdls.spawns[rank] = spawn
-  Ytdls.spawns[rank].on('error', (err) => {
-    console.log(rank);
-    console.log('error!', err)
+  Ytdls.spawns[rank] = initSpawn()
+  Ytdls.spawns[rank].spawn = spawn
+  Ytdls.spawns[rank].data.rank = rank
+  Ytdls.spawns[rank].spawn.on('error', (err) => {
+    Ytdls.spawns[rank].data.errors.push(err)
+    console.log(Ytdls.spawns[rank])
   })
-  Ytdls.spawns[rank].stdout.on('data', (data) => {
-    console.log(rank);
-     console.log(data.toString('UTF8'))
+  Ytdls.spawns[rank].spawn.stdout.on('data', (data) => {
+    const str = data.toString('UTF-8')
+    // console.log(Ytdls.spawns[rank].data);
+    Ytdls.spawns[rank].data.stdout = str
+    parser.parseStdout(str, Ytdls.spawns[rank].data, (data) => {
+      Ytdls.spawns[rank].data = data
+      console.log('.')
+    })
    })
-  Ytdls.spawns[rank].stderr.on('data', (data) => {
-    console.log(rank);
-    console.log(`stderr: ${data}`)
+  Ytdls.spawns[rank].spawn.stderr.on('data', (data) => {
+    Ytdls.spawns[rank].data.stderr.push(data.toString('UTF8'))
+    console.log(Ytdls.spawns[rank].data)
   })
-  Ytdls.spawns[rank].on('close', (code) => {
-    console.log(rank);
+  Ytdls.spawns[rank].spawn.on('close', (code) => {
+    Ytdls.spawns[rank].data.done = true
     console.log(`child process exited with code ${code}`)
+    console.log(Ytdls.spawns[rank].data)
   })
 }
 
