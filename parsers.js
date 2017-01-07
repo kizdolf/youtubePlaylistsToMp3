@@ -5,10 +5,15 @@ const parseDownloadStdout = (stdout, data) => {
   // console.log(stdout);
   if(/^\[download\] Downloading video [1-9]+ of [1-9]+$/.test(stdout)){
     data.currentTrack.rank = parts[3]
+
   } else if (/^\[download\] Destination:/.test(stdout)) {
     const name = stdout.split('/').pop().split('.').slice(0 ,-1).join(".")
+    const filePath = stdout.split('/')
+    filePath.shift()
     data.currentTrack.title = name
-  } else if (/\[download\].*of.*at.*ETA.*/.test(stdout)) { //[download]  33.4% of 3.03MiB at 586.75KiB/s ETA 00:03
+    data.filesPaths.push('/' + filePath.join('/'))
+
+  } else if (/\[download\].*of.*at.*ETA.*/.test(stdout)) {
     data.currentTrack.percent = parts[1]
     data.currentTrack.size = parts[3]
     data.currentTrack.speed = parts[5]
@@ -25,7 +30,6 @@ const parseYoutubePlaylistStdout = (stdout, data) => {
   if(data.playlistId === "" && parts[2] == 'Downloading' && parts[3] === 'webpage') {
     data.playlistId = parts[1]
     console.log('id = ' + data.playlistId);
-    // playlist BADABOOM: Downloading 8 videos
   } else if (/Downloading [0-9]+ videos/.test(stdout)) {
     parts.pop()
     data.playlistCount = parts.pop()
@@ -35,7 +39,6 @@ const parseYoutubePlaylistStdout = (stdout, data) => {
     data.playlistName = parts.join(" ").trim().slice(0, -1)
     console.log("name : " + data.playlistName);
   }
-  // console.log(data);
   return data
 }
 

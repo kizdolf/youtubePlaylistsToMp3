@@ -13,18 +13,9 @@
     - on end mark correct data structure as finished and exit when it's all good.
     -could be really good to extract metadata from file name as well, and write it in the mp3 file.
 
-*/
-/*
 full cmd exemple:
-youtube-dl
--4
---no-check-certificate
---no-warnings
--i
--k
---extract-audio
---audio-format mp3 PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP
--o ./%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s
+youtube-dl -4 --no-check-certificate --no-warnings -i -k --extract-audio \
+--audio-format mp3 PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP -o ./%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s \
 --print-json
 */
 'use strict'
@@ -37,12 +28,12 @@ const destPath = '/home/dk/Lab/js/youtubePlaylistsToMp3/zik/'
 const destPathFormated = destPath + '%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s'
 
 const playlistIds = [
-// 'PL9mC8MCWYBj3g8xmoaCDGmnv8JavgzWEd',
-// 'PL9mC8MCWYBj0cLCKMkwnPR-TlbUOavoDh',
+'PL9mC8MCWYBj3g8xmoaCDGmnv8JavgzWEd',
+'PL9mC8MCWYBj0cLCKMkwnPR-TlbUOavoDh',
 'PLJK-J3dfQ5FUIUi89Su5p9AcIFDYeey24',
-// 'PL9mC8MCWYBj2jQvaCSEKE2wzdUbZ8I6Ju',
-// 'PL-THY7w0kcYTeVb_BF3arlFlu5dKn_HNe',
-// 'PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP',
+'PL9mC8MCWYBj2jQvaCSEKE2wzdUbZ8I6Ju',
+'PL-THY7w0kcYTeVb_BF3arlFlu5dKn_HNe',
+'PL-THY7w0kcYSe8Ul1KPIPS3-xV8l9wVqP',
 ]
 
 //stuff you should maybe not change too much (excpet if you want to do the TODO list ofc)
@@ -60,6 +51,7 @@ const initSpawn = () => {
       playlistName: "",
       playlistCount: -1,
       tracksDone: [],
+      filesPaths: [],
       currentTrack : {
         title : "",
         size: "",
@@ -77,6 +69,12 @@ const initSpawn = () => {
   }
 }
 
+const display = () => {
+  Ytdls.spawns.forEach((spawn) => {
+    console.log(spawn.data);
+  })
+}
+
 const handleSpawn = (spawn, rank) => {
   Ytdls.spawns[rank] = initSpawn()
   Ytdls.spawns[rank].spawn = spawn
@@ -91,7 +89,7 @@ const handleSpawn = (spawn, rank) => {
     Ytdls.spawns[rank].data.stdout = str
     parser.parseStdout(str, Ytdls.spawns[rank].data, (data) => {
       Ytdls.spawns[rank].data = data
-      console.log('.')
+      display()
     })
    })
   Ytdls.spawns[rank].spawn.stderr.on('data', (data) => {
